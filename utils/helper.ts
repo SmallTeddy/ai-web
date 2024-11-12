@@ -1,7 +1,6 @@
-import {createParser} from "eventsource-parser";
-import {getToken, isLogin} from "~/utils/tools";
-import {useGlobalState} from "~/utils/store";
-
+import { createParser } from "eventsource-parser";
+import { getToken, isLogin } from "~/utils/tools";
+import { useGlobalState } from "~/utils/store";
 export const headers = {
     'Content-Type': 'text/event-stream',
 } as const
@@ -9,7 +8,6 @@ export const headers = {
 export function streamResponse(res: Response, parser: (chunk: string) => string) {
     const textDecoder = new TextDecoder()
     const textEncoder = new TextEncoder()
-
     const readableStream = new ReadableStream({
         async start(controller) {
             const parserStream = createParser((event) => {
@@ -37,7 +35,9 @@ export function streamResponse(res: Response, parser: (chunk: string) => string)
 
 export function openaiParser(chunk: string) {
     const data: OpenAIRes = JSON.parse(chunk)
-    return data.choices[0].delta.content ?? ''
+    if (data.choices[0].delta) {
+        return data.choices[0].delta.content ?? ''
+    }
 }
 
 export function workersTextParser(chunk: string) {
@@ -55,20 +55,20 @@ export function imageResponse(res: Response) {
 
 export async function handleErr(res: Response) {
     const text = await res.text()
-    console.error(res.status, res.statusText, text)
+    console.log(res.status, res.statusText, text)
     return new Response(text, {
         status: res.status,
         statusText: res.statusText,
     })
 }
 
-const {passModal} = useGlobalState()
+const { passModal } = useGlobalState()
 
 async function handleStream(data: ReadableStream, onStream: (data: string) => void, resolve: (value: unknown) => void) {
     const reader = data.getReader()
     const decoder = new TextDecoder()
     while (true) {
-        const {value, done} = await reader.read()
+        const { value, done } = await reader.read()
         if (done) {
             resolve(null)
             break
